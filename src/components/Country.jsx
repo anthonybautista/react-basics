@@ -1,16 +1,17 @@
 import { IconButton, Typography, Box, Divider } from '@mui/material';
 import AddCircleRoundedIcon from '@mui/icons-material/AddCircleRounded';
+import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import Badge from '@mui/material/Badge';
 import React, { Component } from 'react';
 
 class Country extends Component {
   state = {
-    name: 'USA',
-    gold: 0,
-    silver: 0,
-    bronze: 0
+    name: this.props.country.name,
+    gold: this.props.country.goldMedalCount,
+    silver: this.props.country.silverMedalCount,
+    bronze: this.props.country.bronzeMedalCount
   }
-  // helper method
+  // helper methods
   incrementGold = () => {
     this.setState({ gold: (this.state.gold + 1) })
   }
@@ -23,21 +24,70 @@ class Country extends Component {
     this.setState({ bronze: (this.state.bronze + 1) })
   }
 
-  incrementButton = (type) => {
+  decrementGold = () => {
+    this.setState({ gold: (this.state.gold - 1) })
+  }
+
+  decrementSilver = () => {
+    this.setState({ silver: (this.state.silver - 1) })
+  }
+
+  decrementBronze = () => {
+    this.setState({ bronze: (this.state.bronze - 1) })
+  }
+
+  addButtons = (type) => {
     if (type === "gold") {
-        return  <IconButton onClick={this.incrementGold} aria-label="add" color='black' sx={{ml : 2}}>
-                <AddCircleRoundedIcon/>
-            </IconButton>;
+        return  <div>
+                  <IconButton onClick={this.incrementGold} aria-label="add" color='black' sx={{ml : 2, top: 20}}>
+                    <AddCircleRoundedIcon/>
+                  </IconButton>
+                  <IconButton onClick={this.decrementGold} disabled={this.allowDecrement("gold")} aria-label="sub" color='black' sx={{mr : 9.5, bottom: 20}}>
+                    <RemoveCircleIcon/>
+                  </IconButton>
+                </div>;
     } else if (type === "silver") {
-        return  <IconButton onClick={this.incrementSilver} aria-label="add" color='black' sx={{ml : 2}}>
-                <AddCircleRoundedIcon/>
-            </IconButton>;
+        return  <div>
+                  <IconButton onClick={this.incrementSilver} aria-label="add" color='black' sx={{ml : 2, top: 20}}>
+                    <AddCircleRoundedIcon/>
+                  </IconButton>
+                  <IconButton onClick={this.decrementSilver} disabled={this.allowDecrement("silver")} aria-label="sub" color='black' sx={{mr : 9.5, bottom: 20}}>
+                    <RemoveCircleIcon/>
+                  </IconButton>
+                </div>;
     } 
 
-    return  <IconButton onClick={this.incrementBronze} aria-label="add" color='black' sx={{ml : 2}}>
+    return  <div>
+              <IconButton onClick={this.incrementBronze} aria-label="add" color='black' sx={{ml : 2, top: 20}}>
                 <AddCircleRoundedIcon/>
-            </IconButton>;
+              </IconButton>
+              <IconButton onClick={this.decrementBronze} disabled={this.allowDecrement("bronze")} aria-label="sub" color='black' sx={{mr : 9.5, bottom: 20}}>
+                <RemoveCircleIcon/>
+              </IconButton>
+            </div>;
     
+  }
+
+  allowDecrement = (type) => {
+    if (type === "gold") {
+      if (this.state.gold > 0) {
+        return false;
+      } else {
+        return true;
+      }
+    } else if (type === "silver") {
+      if (this.state.silver > 0) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+    if (this.state.bronze > 0) {
+      return false;
+    } 
+
+    return true;
   }
 
   totalGold = () => {
@@ -102,19 +152,19 @@ class Country extends Component {
         }}
         >
             <div id='gold' sx={{ gridColumn: '1/2' }}>
-                <Badge overlap="circular" badgeContent={this.incrementButton("gold")}>
+                <Badge overlap="circular" badgeContent={this.addButtons("gold")}>
                     {this.totalGold()}
                 </Badge>
                 <Typography sx={{ fontWeight: 'bold' }}>Gold</Typography>
             </div>
             <div id='silver' sx={{ gridColumn: '2/3' }}>
-                <Badge overlap="circular" badgeContent={this.incrementButton("silver")}>
+                <Badge overlap="circular" badgeContent={this.addButtons("silver")}>
                     {this.totalSilver()}
                 </Badge>
                 <Typography sx={{ fontWeight: 'bold' }}>Silver</Typography>
             </div>
             <div id='bronze' sx={{ gridColumn: '3/4' }}>
-                <Badge overlap="circular" badgeContent={this.incrementButton("bronze")}>
+                <Badge overlap="circular" badgeContent={this.addButtons("bronze")}>
                     {this.totalBronze()}
                 </Badge>
                 <Typography sx={{ fontWeight: 'bold' }}>Bronze</Typography>
