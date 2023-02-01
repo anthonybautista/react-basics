@@ -2,6 +2,14 @@
   text-align: center;
 }
 
+.countryContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  padding: 10px;
+}
+
 body {
   background: rgb(143, 143, 143);
 }
