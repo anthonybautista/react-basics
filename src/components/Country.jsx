@@ -7,7 +7,7 @@ class Country extends Component {
   // helper methods
 
   render() { 
-    const { country, increment, decrement } = this.props;
+    const { country, increment, decrement, deleteCountry } = this.props;
     return (
       <div>
         <div>
@@ -58,19 +58,27 @@ class Country extends Component {
         sx={{
             display: 'grid',
             gridAutoFlow: 'row',
-            gridTemplateColumns: '75% 25%',
+            gridTemplateColumns: '25% 50% 25%',
             gridTemplateRows: 'repeat(1, 25px)',
             gap: 1,
             pt: 1,
             pb: 1
         }}
         >
-            <div sx={{ gridColumn: '1/2' }}>
-                <Typography sx={{ fontWeight: 'bold', textAlign: 'right'}}>Total Medals:</Typography>
-            </div>
-            <div sx={{ gridColumn: '2/3' }}>
-                <Typography sx={{ fontWeight: 'bold' }}>{country.gold + country.silver + country.bronze}</Typography>
-            </div>
+          <div sx={{ gridColumn: '1/2' }}>
+            <Typography 
+              sx={{ cursor: 'pointer', textAlign: 'left', color: 'red', pl: 1}}
+              onClick={() => deleteCountry(country.id)}
+              >
+                Delete
+              </Typography>
+          </div>
+          <div sx={{ gridColumn: '2/3' }}>
+            <Typography sx={{ fontWeight: 'bold', textAlign: 'right'}}>Total Medals:</Typography>
+          </div>
+          <div sx={{ gridColumn: '3/4' }}>
+            <Typography sx={{ fontWeight: 'bold' }}>{country.gold + country.silver + country.bronze}</Typography>
+          </div>
         </Box>
       </div>
     );

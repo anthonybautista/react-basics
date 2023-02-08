@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import Country from './components/Country';
+import NewCountry from './components/NewCountry';
 import './App.css';
 import { Card, Toolbar, Typography, AppBar, Box } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -37,6 +38,18 @@ class App extends Component {
     countriesMutable[idx][medalType] -= 1;
     this.setState({ countries: countriesMutable })
   }
+
+  deleteCountry = (countryId) => {
+    const countries = this.state.countries.filter(c => c.id !== countryId);
+    this.setState({ countries:countries });
+  }
+
+  addCountry = (name) => {
+    const { countries } = this.state;
+    const id = countries.length === 0 ? 1 : Math.max(...countries.map(country => country.id)) + 1;
+    const mutableCountries = countries.concat({ id: id, name: name, gold: 0, silver: 0, bronze: 0 });
+    this.setState({ countries:mutableCountries });
+  } 
 
   render() {
     return (
@@ -84,10 +97,12 @@ class App extends Component {
                   country={ country } 
                   increment={this.increment}
                   decrement={this.decrement}
+                  deleteCountry={this.deleteCountry}
                 />
               </Card>
             )}
-          </Box>  
+          </Box>
+          <NewCountry onAdd={this.addCountry} />
         </div>
       </ThemeProvider>  
     );
