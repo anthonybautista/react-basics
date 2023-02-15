@@ -1,13 +1,11 @@
 import { Typography, Box, Divider } from '@mui/material';
-import React, { Component } from 'react';
+import React from 'react';
 import Medal from './Medal';
 
-class Country extends Component {
+const Country = (props) => {
 
-  // helper methods
+    const { country, increment, decrement, deleteCountry } = props;
 
-  render() { 
-    const { country, increment, decrement, deleteCountry } = this.props;
     return (
       <div>
         <div>
@@ -82,7 +80,7 @@ class Country extends Component {
         </Box>
       </div>
     );
-  }
+
 }
 
 export default Country

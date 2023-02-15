@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import Country from './components/Country';
 import NewCountry from './components/NewCountry';
 import './App.css';
@@ -13,100 +13,98 @@ const theme = createTheme({
   }
 });
 
-class App extends Component {
-  state = {
-    countries: [
+const App = () => {
+  const [countries, setCountries] = useState([]);
+
+  useEffect(() => {
+    let mutableCountries = [
       { id: 1, name: 'United States', gold: 4, silver: 1, bronze: 2 },
       { id: 2, name: 'China', gold: 3, silver: 0, bronze: 1 },
       { id: 3, name: 'Germany', gold: 0, silver: 1, bronze: 2 },
     ]
-  }
+    setCountries(mutableCountries);
+  }, []);
 
   // helper methods
-  increment = (countryId, medal) => {
-    const countriesMutable = [...this.state.countries];
+  const increment = (countryId, medal) => {
+    let countriesMutable = [...countries ];
     const idx = countriesMutable.findIndex((c) => c.id === countryId);
     const medalType = medal.toLowerCase();
     countriesMutable[idx][medalType] += 1;
-    this.setState({ countries: countriesMutable })
+    setCountries(countriesMutable);
   }
 
-  decrement = (countryId, medal) => {
-    const countriesMutable = [...this.state.countries];
+  const decrement = (countryId, medal) => {
+    let countriesMutable = [...countries ];
     const idx = countriesMutable.findIndex((c) => c.id === countryId);
     const medalType = medal.toLowerCase();
     countriesMutable[idx][medalType] -= 1;
-    this.setState({ countries: countriesMutable })
+    setCountries(countriesMutable)
   }
 
-  deleteCountry = (countryId) => {
-    const countries = this.state.countries.filter(c => c.id !== countryId);
-    this.setState({ countries:countries });
+  const deleteCountry = (countryId) => {
+    setCountries(countries.filter(c => c.id !== countryId));
   }
 
-  addCountry = (name) => {
-    const { countries } = this.state;
+  const addCountry = (name) => {
     const id = countries.length === 0 ? 1 : Math.max(...countries.map(country => country.id)) + 1;
-    const mutableCountries = countries.concat({ id: id, name: name, gold: 0, silver: 0, bronze: 0 });
-    this.setState({ countries:mutableCountries });
+    setCountries(countries.concat({ id: id, name: name, gold: 0, silver: 0, bronze: 0 }));
   } 
 
-  render() {
-    return (
-      <ThemeProvider theme={theme}>
-        <div className="App">
-          <AppBar position="static" sx={{px: 2}} color="secondary">
-            <Toolbar disableGutters>
-              <img src="/logo.png" alt="Olympic Logo" />
+  return (
+    <ThemeProvider theme={theme}>
+      <div className="App">
+        <AppBar position="static" sx={{px: 2}} color="secondary">
+          <Toolbar disableGutters>
+            <img src="/logo.png" alt="Olympic Logo" />
+            <Typography
+              variant="h6"
+              noWrap
+              component="div"
+              sx={{
+                mr: 2,
+                ml: 2,
+                fontWeight: 700,
+                letterSpacing: '.3rem',
+                color: 'inherit',
+                textDecoration: 'none',
+              }}
+            >
+              The Olympics
+            </Typography>
+            <Box sx={{textAlign: 'right', flex: 1}}>
               <Typography
                 variant="h6"
                 noWrap
                 component="div"
                 sx={{
-                  mr: 2,
-                  ml: 2,
                   fontWeight: 700,
                   letterSpacing: '.3rem',
                   color: 'inherit',
                   textDecoration: 'none',
                 }}
               >
-                The Olympics
+                Total Medals: {countries.reduce((a, b) => a + (b.gold + b.silver + b.bronze), 0)}
               </Typography>
-              <Box sx={{textAlign: 'right', flex: 1}}>
-                <Typography
-                  variant="h6"
-                  noWrap
-                  component="div"
-                  sx={{
-                    fontWeight: 700,
-                    letterSpacing: '.3rem',
-                    color: 'inherit',
-                    textDecoration: 'none',
-                  }}
-                >
-                  Total Medals: {this.state.countries.reduce((a, b) => a + (b.gold + b.silver + b.bronze), 0)}
-                </Typography>
-              </Box>
-            </Toolbar>
-          </AppBar>
-          <Box sx={{p: 1}} className="countryContainer">
-            { this.state.countries.map(country => 
-              <Card key={ country.id } sx={{ width: 300, minWidth: 300, mx: 'auto', mt: 2, boxShadow: 3 }}>
-                <Country 
-                  country={ country } 
-                  increment={this.increment}
-                  decrement={this.decrement}
-                  deleteCountry={this.deleteCountry}
-                />
-              </Card>
-            )}
-          </Box>
-          <NewCountry onAdd={this.addCountry} />
-        </div>
-      </ThemeProvider>  
-    );
-  }
+            </Box>
+          </Toolbar>
+        </AppBar>
+        <Box sx={{p: 1}} className="countryContainer">
+          { countries.map(country => 
+            <Card key={ country.id } sx={{ width: 300, minWidth: 300, mx: 'auto', mt: 2, boxShadow: 3 }}>
+              <Country 
+                country={ country } 
+                increment={increment}
+                decrement={decrement}
+                deleteCountry={deleteCountry}
+              />
+            </Card>
+          )}
+        </Box>
+        <NewCountry onAdd={addCountry} />
+      </div>
+    </ThemeProvider>  
+  );
 }
 
 export default App;
