@@ -4,6 +4,8 @@ import NewCountry from './components/NewCountry';
 import './App.css';
 import { Card, Toolbar, Typography, AppBar, Box } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import axios from 'axios';
+
 
 const theme = createTheme({
   palette: {
@@ -15,21 +17,20 @@ const theme = createTheme({
 
 const App = () => {
   const [countries, setCountries] = useState([]);
+  const [apiEndpoint] = useState('https://olympic-api.azurewebsites.net/Api/country/');
 
   useEffect(() => {
-    let mutableCountries = [
-      { id: 1, name: 'United States', gold: 4, silver: 1, bronze: 2 },
-      { id: 2, name: 'China', gold: 3, silver: 0, bronze: 1 },
-      { id: 3, name: 'Germany', gold: 0, silver: 1, bronze: 2 },
-    ]
-    setCountries(mutableCountries);
-  }, []);
+    const fetchData = async () => {
+      const { data: mutableCountries } = await axios.get(apiEndpoint);
+      setCountries(mutableCountries);
+    }
+    fetchData();
+  }, [apiEndpoint]);
 
-  // helper methods
   const increment = (countryId, medal) => {
     let countriesMutable = [...countries ];
     const idx = countriesMutable.findIndex((c) => c.id === countryId);
-    const medalType = medal.toLowerCase();
+    const medalType = medal.toLowerCase() + 'MedalCount';
     countriesMutable[idx][medalType] += 1;
     setCountries(countriesMutable);
   }
@@ -37,18 +38,19 @@ const App = () => {
   const decrement = (countryId, medal) => {
     let countriesMutable = [...countries ];
     const idx = countriesMutable.findIndex((c) => c.id === countryId);
-    const medalType = medal.toLowerCase();
+    const medalType = medal.toLowerCase() + 'MedalCount';
     countriesMutable[idx][medalType] -= 1;
     setCountries(countriesMutable)
   }
 
-  const deleteCountry = (countryId) => {
+  const deleteCountry = async (countryId) => {
+    await axios.delete(apiEndpoint + countryId)
     setCountries(countries.filter(c => c.id !== countryId));
   }
 
-  const addCountry = (name) => {
-    const id = countries.length === 0 ? 1 : Math.max(...countries.map(country => country.id)) + 1;
-    setCountries(countries.concat({ id: id, name: name, gold: 0, silver: 0, bronze: 0 }));
+  const addCountry = async (name) => {
+    const { data: post } = await axios.post(apiEndpoint, { name: name, goldMedalCount: 0, silverMedalCount: 0, bronzeMedalCount: 0 });
+    setCountries(countries.concat(post));
   } 
 
   return (
@@ -84,7 +86,7 @@ const App = () => {
                   textDecoration: 'none',
                 }}
               >
-                Total Medals: {countries.reduce((a, b) => a + (b.gold + b.silver + b.bronze), 0)}
+                Total Medals: {countries.reduce((a, b) => a + (b.goldMedalCount + b.silverMedalCount + b.bronzeMedalCount), 0)}
               </Typography>
             </Box>
           </Toolbar>

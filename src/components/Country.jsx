@@ -23,7 +23,7 @@ const Country = (props) => {
             <div id='gold' sx={{ gridColumn: '1/2' }}>
               <Medal
                 bg='#F7FF11'
-                count={country.gold}
+                count={country.goldMedalCount}
                 name='Gold'
                 increment={increment}
                 decrement={decrement}
@@ -33,7 +33,7 @@ const Country = (props) => {
             <div id='silver' sx={{ gridColumn: '2/3' }}>
               <Medal
                 bg='#bfc1c2'
-                count={country.silver}
+                count={country.silverMedalCount}
                 name='Silver'
                 increment={increment}
                 decrement={decrement}
@@ -43,7 +43,7 @@ const Country = (props) => {
             <div id='bronze' sx={{ gridColumn: '3/4' }}>
               <Medal
                   bg='#B85E1A'
-                  count={country.bronze}
+                  count={country.bronzeMedalCount}
                   name='Bronze'
                   increment={increment}
                   decrement={decrement}
@@ -75,7 +75,7 @@ const Country = (props) => {
             <Typography sx={{ fontWeight: 'bold', textAlign: 'right'}}>Total Medals:</Typography>
           </div>
           <div sx={{ gridColumn: '3/4' }}>
-            <Typography sx={{ fontWeight: 'bold' }}>{country.gold + country.silver + country.bronze}</Typography>
+            <Typography sx={{ fontWeight: 'bold' }}>{country.goldMedalCount + country.silverMedalCount + country.bronzeMedalCount}</Typography>
           </div>
         </Box>
       </div>
