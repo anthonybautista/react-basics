@@ -2,13 +2,15 @@ import { IconButton, Typography, Box } from '@mui/material';
 import AddCircleRoundedIcon from '@mui/icons-material/AddCircleRounded';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import Badge from '@mui/material/Badge';
-import React from 'react';
+import React, { useState } from 'react';
 
 const Medal = (props) => {
 
   const { bg, count, name, increment, decrement, id } = props;
   const shapeStyles = { bgcolor: bg, width: 40, height: 40 };
   const shapeCircleStyles = { borderRadius: '50%' };
+
+  const [originalCount] = useState(count);
 
   const addButtons = () => {
     return  <div>
@@ -20,12 +22,20 @@ const Medal = (props) => {
               </IconButton>
             </div>;
   }
+
+  const valueChanged = () => {
+    if (originalCount === count) {
+      return 'black';
+    } else {
+      return '#9F1716';
+    }
+  }
     
   return (
     <div>
       <Badge overlap="circular" badgeContent={addButtons()}>
         <Box component="span" sx={{ ...shapeStyles, ...shapeCircleStyles, boxShadow: 3 }}>
-            <Typography sx={{ fontWeight: 'bold', mx: 'auto', mt: 1}}>
+            <Typography sx={{ fontWeight: 'bold', mx: 'auto', mt: 1, color: valueChanged() }}>
                 {count}
             </Typography>
         </Box>
