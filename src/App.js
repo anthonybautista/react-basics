@@ -6,6 +6,7 @@ import { Card, Toolbar, Typography, AppBar, Box, Fab } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import axios from 'axios';
 import SaveIcon from '@mui/icons-material/Save';
+import { HubConnectionBuilder } from '@microsoft/signalr';
 
 
 const theme = createTheme({
@@ -18,11 +19,24 @@ const theme = createTheme({
 
 const App = () => {
   const [countries, setCountries] = useState([]);
-  const [reload, setReload] = useState(false); 
-  const [apiEndpoint] = useState('https://olympic-api.azurewebsites.net/Api/country/');
+  const [reload, setReload] = useState(0); 
+  const [ connection, setConnection] = useState(null);
+  //const apiEndpoint = "https://localhost:5001/api/country/";
+  const apiEndpoint = 'https://olympic-api.azurewebsites.net/Api/country/';
+  //const hubEndpoint = "https://localhost:5001/medalsHub/"
+  const hubEndpoint = "https://olympic-api.azurewebsites.net/medalsHub/"
 
   let originalCountries = useRef(null);
   let originalMedals = useRef(null);
+
+  const latestCountries = useRef(null);
+  // latestCountries.current is a ref variable to countries
+  // this is needed to access state variable in useEffect w/o dependency
+  latestCountries.current = countries;
+
+  const reloadCounter = useRef(null);
+
+  reloadCounter.current = reload;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,7 +52,92 @@ const App = () => {
       }
     }
     fetchData();
-  }, [apiEndpoint]);
+
+    // signalR
+    const newConnection = new HubConnectionBuilder()
+      .withUrl(hubEndpoint)
+      .withAutomaticReconnect()
+      .build();
+
+    setConnection(newConnection);
+  }, []);
+
+  // componentDidUpdate (changes to connection)
+  useEffect(() => {
+    if (connection) {
+      connection.start()
+      .then(() => {
+        console.log('Connected!')
+
+        connection.on('ReceiveAddMessage', country => {
+          console.log(`Add: ${country.name}`);
+
+          let newCountry = { 
+            id: country.id, 
+            name: country.name,
+            goldMedalCount: 0,
+            silverMedalCount: 0,
+            bronzeMedalCount: 0,
+          };
+
+          let mutableCountries = [...latestCountries.current];
+          mutableCountries = mutableCountries.concat(newCountry);
+          setCountries(mutableCountries);
+          originalCountries.current = originalCountries.current.concat({ 
+            id: country.id, 
+            name: country.name,
+            goldMedalCount: 0,
+            silverMedalCount: 0,
+            bronzeMedalCount: 0,
+          });
+        });
+
+        connection.on('ReceiveDeleteMessage', id => {
+          console.log(`Delete id: ${id}`);
+
+          let mutableCountries = [...latestCountries.current];
+          mutableCountries = mutableCountries.filter(c => c.id !== id);
+          setCountries(mutableCountries);
+          originalCountries.current = originalCountries.current.filter(c => c.id !== id);
+          originalMedals.current = latestCountries.current.filter(c => c.id !== id).reduce((a, b) => a + (b.goldMedalCount + b.silverMedalCount + b.bronzeMedalCount), 0);
+        });
+
+        connection.on('ReceivePatchMessage', country => {
+          console.log(`Patch: ${country.name}`);
+
+          let updatedCountry = {
+            id: country.id,
+            name: country.name,
+            goldMedalCount: country.goldMedalCount,
+            silverMedalCount: country.silverMedalCount,
+            bronzeMedalCount: country.bronzeMedalCount,
+          }
+
+          let mutableCountries = [...latestCountries.current];
+          const idx = mutableCountries.findIndex(c => c.id === country.id);
+          mutableCountries[idx] = updatedCountry;
+
+          setCountries(mutableCountries);
+          
+          const idx2 = originalCountries.current.findIndex(c => c.id === country.id);
+
+          originalCountries.current[idx2] = { 
+            id: country.id,
+            name: country.name,
+            goldMedalCount: country.goldMedalCount,
+            silverMedalCount: country.silverMedalCount,
+            bronzeMedalCount: country.bronzeMedalCount,
+          };
+          
+          originalMedals.current = mutableCountries.reduce((a, b) => a + (b.goldMedalCount + b.silverMedalCount + b.bronzeMedalCount), 0);
+          setReload(reloadCounter.current + 1);
+        });
+
+      })
+      .catch(e => console.log('Connection failed: ', e));
+    }
+  // useEffect is dependent on changes connection
+  }, [connection, countries, reload]);
 
   const totalMedals = () => {
     return countries.reduce((a, b) => a + (b.goldMedalCount + b.silverMedalCount + b.bronzeMedalCount), 0);
@@ -62,15 +161,13 @@ const App = () => {
 
   const deleteCountry = async (countryId) => {
     await axios.delete(apiEndpoint + countryId)
-    setCountries(countries.filter(c => c.id !== countryId));
-    originalCountries.current = originalCountries.current.filter(c => c.id !== countryId);
-    originalMedals.current = countries.filter(c => c.id !== countryId).reduce((a, b) => a + (b.goldMedalCount + b.silverMedalCount + b.bronzeMedalCount), 0);
+    //setCountries(countries.filter(c => c.id !== countryId));
+    //originalCountries.current = originalCountries.current.filter(c => c.id !== countryId);
+    //originalMedals.current = countries.filter(c => c.id !== countryId).reduce((a, b) => a + (b.goldMedalCount + b.silverMedalCount + b.bronzeMedalCount), 0);
   }
 
   const addCountry = async (name) => {
-    const { data: post } = await axios.post(apiEndpoint, { name: name, goldMedalCount: 0, silverMedalCount: 0, bronzeMedalCount: 0 });
-    setCountries(countries.concat(post));
-    originalCountries.current = originalCountries.current.concat({ name: name, goldMedalCount: 0, silverMedalCount: 0, bronzeMedalCount: 0 });
+    await axios.post(apiEndpoint, { name: name });
   } 
 
   const countriesNotEqual = (country1, country2) => {
@@ -90,6 +187,7 @@ const App = () => {
     countries.forEach(async country => {
       let jsonPatch = [];
       let originalCountry = originalCountries.current.filter(c => c.name === country.name)[0]
+      
       if (countriesNotEqual(country,originalCountry))  {
         if (country.goldMedalCount !== originalCountry.goldMedalCount) {
           jsonPatch.push({ op: "replace", path: 'goldMedalCount', value: country.goldMedalCount });
@@ -100,9 +198,9 @@ const App = () => {
         if (country.bronzeMedalCount !== originalCountry.bronzeMedalCount) {
           jsonPatch.push({ op: "replace", path: 'bronzeMedalCount', value: country.bronzeMedalCount });
         }
-
+        
         try {
-          await axios.patch(`${apiEndpoint}/${country.id}`, jsonPatch);
+          await axios.patch(`${apiEndpoint}${country.id}`, jsonPatch);
           console.log(`json patch for id: ${country.id}: ${JSON.stringify(jsonPatch)}`);
         } catch (ex) {
           if (ex.response && ex.response.status === 404) {
@@ -117,9 +215,8 @@ const App = () => {
     });
     
     // update state
-    originalCountries.current = countries;
-    originalMedals.current = totalMedals();
-    setReload(!reload);
+    //originalCountries.current = countries;
+    //originalMedals.current = totalMedals();
     
   }
 
