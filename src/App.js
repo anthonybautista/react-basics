@@ -21,10 +21,10 @@ const App = () => {
   const [countries, setCountries] = useState([]);
   const [reload, setReload] = useState(0); 
   const [ connection, setConnection] = useState(null);
-  const apiEndpoint = "https://localhost:5001/api/country/";
-  //const apiEndpoint = 'https://olympic-api.azurewebsites.net/Api/country/';
-  const hubEndpoint = "https://localhost:5001/medalsHub"
-  //const hubEndpoint = "https://olympic-api.azurewebsites.net/medalsHub"
+  //const apiEndpoint = "https://localhost:5001/api/country/";
+  const apiEndpoint = 'https://olympic-api.azurewebsites.net/Api/country/';
+  //const hubEndpoint = "https://localhost:5001/medalsHub"
+  const hubEndpoint = "https://olympic-api.azurewebsites.net/medalsHub"
 
   let originalCountries = useRef(null);
   let originalMedals = useRef(null);
