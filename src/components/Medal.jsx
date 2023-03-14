@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 
 const Medal = (props) => {
 
-  const { bg, count, name, increment, decrement, id } = props;
+  const { bg, count, name, increment, decrement, id, canPatch } = props;
   const shapeStyles = { bgcolor: bg, width: 40, height: 40 };
   const shapeCircleStyles = { borderRadius: '50%' };
 
@@ -33,7 +33,7 @@ const Medal = (props) => {
     
   return (
     <div>
-      <Badge overlap="circular" badgeContent={addButtons()}>
+      <Badge overlap="circular" badgeContent={canPatch && addButtons()}>
         <Box component="span" sx={{ ...shapeStyles, ...shapeCircleStyles, boxShadow: 3 }}>
             <Typography sx={{ fontWeight: 'bold', mx: 'auto', mt: 1, color: valueChanged() }}>
                 {count}

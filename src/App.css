@@ -13,3 +13,14 @@
 body {
   background: rgb(204, 203, 203);
 }
+
+.loginForm {
+  border: 1px solid #999;
+  background-color: #dedede;
+  padding: 8px;
+  border-radius: 4px;
+  position: absolute;
+  width: 300px;
+  top: 65px;
+  left: 8px;
+}

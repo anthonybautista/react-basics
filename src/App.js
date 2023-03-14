@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Country from './components/Country';
 import NewCountry from './components/NewCountry';
+import Login from './components/Login';
 import './App.css';
 import { Card, Toolbar, Typography, AppBar, Box, Fab } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import axios from 'axios';
 import SaveIcon from '@mui/icons-material/Save';
 import { HubConnectionBuilder } from '@microsoft/signalr';
+import { BrowserRouter as Router, Route, Link } from 'react-router-dom';
+import jwtDecode from 'jwt-decode';
 
 
 const theme = createTheme({
@@ -21,10 +24,21 @@ const App = () => {
   const [countries, setCountries] = useState([]);
   const [reload, setReload] = useState(0); 
   const [ connection, setConnection] = useState(null);
-  //const apiEndpoint = "https://localhost:5001/api/country/";
-  const apiEndpoint = 'https://olympic-api.azurewebsites.net/Api/country/';
+  const [ user, setUser ] = useState(
+    {
+      name: null,
+      canPost: false,
+      canPatch: false,
+      canDelete: false
+    }
+  );
+
+  //const apiEndpoint = "https://localhost:5001/jwt/api/country/";
+  const apiEndpoint = 'https://olympic-api.azurewebsites.net/jwt/Api/country/';
   //const hubEndpoint = "https://localhost:5001/medalsHub"
   const hubEndpoint = "https://olympic-api.azurewebsites.net/medalsHub"
+  //const usersEndpoint = "https://localhost:5001/api/users/login";
+  const usersEndpoint = 'https://olympic-api.azurewebsites.net/api/Users/login';
 
   let originalCountries = useRef(null);
   let originalMedals = useRef(null);
@@ -37,6 +51,47 @@ const App = () => {
   const reloadCounter = useRef(null);
 
   reloadCounter.current = reload;
+
+  const handleLogin = async (username, password) => {
+    try {
+      const resp = await axios.post(usersEndpoint, { username: username, password: password });
+      const encodedJwt = resp.data.token;
+      localStorage.setItem('token', encodedJwt);
+      setUser(getUser(encodedJwt));
+    } catch (ex) {
+      if (ex.response && (ex.response.status === 401 || ex.response.status === 400 )) {
+        alert("Login failed");
+      } else if (ex.response) {
+        console.log(ex.response);
+      } else {
+        console.log("Request failed");
+      }
+    }
+  }
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    console.log('logout');
+    localStorage.removeItem('token');
+    setUser({
+      name: null,
+      canPost: false,
+      canPatch: false,
+      canDelete: false
+    });
+    return false;
+  }
+
+  const getUser = (encodedJwt) => {
+    // return unencoded user / permissions
+    const decodedJwt = jwtDecode(encodedJwt);
+    return {
+      name: decodedJwt['username'],
+      canPost: decodedJwt['roles'].indexOf('post') === -1 ? false : true,
+      canPatch: decodedJwt['roles'].indexOf('patch') === -1 ? false : true,
+      canDelete: decodedJwt['roles'].indexOf('delete') === -1 ? false : true,
+    };
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,6 +107,12 @@ const App = () => {
       }
     }
     fetchData();
+
+    const encodedJwt = localStorage.getItem("token");
+    // check for existing token
+    if (encodedJwt) {
+      setUser(getUser(encodedJwt));
+    }
 
     // signalR
     const newConnection = new HubConnectionBuilder()
@@ -160,14 +221,51 @@ const App = () => {
   }
 
   const deleteCountry = async (countryId) => {
-    await axios.delete(apiEndpoint + countryId)
-    //setCountries(countries.filter(c => c.id !== countryId));
-    //originalCountries.current = originalCountries.current.filter(c => c.id !== countryId);
-    //originalMedals.current = countries.filter(c => c.id !== countryId).reduce((a, b) => a + (b.goldMedalCount + b.silverMedalCount + b.bronzeMedalCount), 0);
+    try {
+      await axios.delete(apiEndpoint + countryId, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+    } catch (ex) {
+      if (ex.response && ex.response.status === 404) {
+        // country does not exist
+        console.log("404 Endpoint Not Found!");
+      } else if (ex.response && (ex.response.status === 401 || ex.response.status === 403)) { 
+        // in order to restore the defualt medal counts, we would need to save 
+        // the page value and saved value for each medal (like in the advanced example)
+        alert('You are not authorized to complete this request');
+      } else if (ex.response) {
+        console.log(ex.response);
+      } else {
+        console.log("Request failed");
+      }
+    }
   }
 
   const addCountry = async (name) => {
-    await axios.post(apiEndpoint, { name: name });
+    try {
+      await axios.post(apiEndpoint, {
+        name: name
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+    } catch (ex) {
+      if (ex.response && ex.response.status === 404) {
+        // country does not exist
+        console.log("404 Endpoint Not Found!");
+      } else if (ex.response && (ex.response.status === 401 || ex.response.status === 403)) { 
+        // in order to restore the defualt medal counts, we would need to save 
+        // the page value and saved value for each medal (like in the advanced example)
+        alert('You are not authorized to complete this request');
+      } else if (ex.response) {
+        console.log(ex.response);
+      } else {
+        console.log("Request failed");
+      }
+    }
   } 
 
   const countriesNotEqual = (country1, country2) => {
@@ -200,14 +298,24 @@ const App = () => {
         }
         
         try {
-          await axios.patch(`${apiEndpoint}${country.id}`, jsonPatch);
+          await axios.patch(`${apiEndpoint}${country.id}`, jsonPatch, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
           console.log(`json patch for id: ${country.id}: ${JSON.stringify(jsonPatch)}`);
         } catch (ex) {
           if (ex.response && ex.response.status === 404) {
-            // country already deleted
-            console.log("The record does not exist - it may have already been deleted");
-          } else { 
-            alert('An error occurred while updating');
+            // country does not exist
+            console.log("The record does not exist - it may have been deleted");
+          } else if (ex.response && (ex.response.status === 401 || ex.response.status === 403)) { 
+            // in order to restore the defualt medal counts, we would need to save 
+            // the page value and saved value for each medal (like in the advanced example)
+            alert('You are not authorized to complete this request');
+          } else if (ex.response) {
+            console.log(ex.response);
+          } else {
+            console.log("Request failed");
           }
         }
       }  
@@ -227,65 +335,79 @@ const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <div className="App">
-        <AppBar position="static" sx={{px: 2}} color="secondary">
-          <Toolbar disableGutters>
-            <img src="/logo.png" alt="Olympic Logo" />
-            <Typography
-              variant="h6"
-              noWrap
-              component="div"
-              sx={{
-                mr: 2,
-                ml: 2,
-                fontWeight: 700,
-                letterSpacing: '.3rem',
-                color: 'inherit',
-                textDecoration: 'none',
-              }}
-            >
-              The Olympics
-            </Typography>
-            <Box sx={{textAlign: 'right', flex: 1}}>
+        <Router>
+          <AppBar position="static" sx={{ width: '100%'}} color="secondary">
+            <Toolbar disableGutters>
+              <img src="/logo.png" alt="Olympic Logo" style={{paddingLeft: 5}}/>
               <Typography
                 variant="h6"
                 noWrap
                 component="div"
                 sx={{
+                  mr: 2,
+                  ml: 2,
                   fontWeight: 700,
                   letterSpacing: '.3rem',
-                  color: valueChanged() ? '#9F1716' : 'black',
+                  color: 'inherit',
                   textDecoration: 'none',
                 }}
               >
-                Total Medals: {totalMedals()}
+                The Olympics
               </Typography>
-            </Box>
-          </Toolbar>
-        </AppBar>
-        <Fab 
-          variant='extended'
-          disabled={!valueChanged()}
-          sx={{mt: 2}}
-          onClick={ () => handleSave() }
-          color='error'
-        >
-          <SaveIcon sx={{ mr: 1 }} />
-          Save Changes
-        </Fab>
-        <Box sx={{p: 1}} className="countryContainer">
-          { countries.map(country => 
-            <Card key={ country.id } sx={{ width: 300, minWidth: 300, mx: 'auto', mt: 2, boxShadow: 3 }}>
-              <Country 
-                country={ country } 
-                key={ reload }
-                increment={increment}
-                decrement={decrement}
-                deleteCountry={deleteCountry}
-              />
-            </Card>
-          )}
-        </Box>
-        <NewCountry onAdd={addCountry} />
+              <Box sx={{textAlign: 'right', flex: 1, pr: 2}}>
+                <Typography
+                  variant="h6"
+                  noWrap
+                  component="div"
+                  sx={{
+                    fontWeight: 700,
+                    letterSpacing: '.3rem',
+                    color: valueChanged() ? '#9F1716' : 'black',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Total Medals: {totalMedals()}
+                </Typography>
+              </Box>
+            </Toolbar>
+          </AppBar>
+          <Box sx={{ textAlign: 'left', ml: 5, mt: 1 }}>
+            {user.name ? 
+              <span className='logout'><a href="/" onClick={handleLogout} className='logoutLink'>Logout</a> [{user.name}]</span>
+              :
+              <Link to="/login" className='loginLink'>Login</Link>
+            }
+          </Box>
+          <Route exact path="/login">
+            <Login onLogin={handleLogin} />
+          </Route>
+          <Fab 
+            variant='extended'
+            disabled={!valueChanged()}
+            sx={{mt: 2}}
+            onClick={ () => handleSave() }
+            color='error'
+          >
+            <SaveIcon sx={{ mr: 1 }} />
+            Save Changes
+          </Fab>
+          <Box sx={{p: 1}} className="countryContainer">
+            { countries.map(country => 
+              <Card key={ country.id } sx={{ width: 300, minWidth: 300, mx: 'auto', mt: 2, boxShadow: 3 }}>
+                <Country 
+                  country={ country } 
+                  key={ reload }
+                  canDelete={ user.canDelete }
+                  canPatch={ user.canPatch }
+                  increment={increment}
+                  decrement={decrement}
+                  deleteCountry={deleteCountry}
+                />
+              </Card>
+            )}
+          </Box>
+          { user.canPost && <NewCountry onAdd={addCountry} /> }
+        </Router>  
       </div>
     </ThemeProvider>  
   );

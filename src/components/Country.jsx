@@ -5,7 +5,7 @@ import Medal from './Medal';
 
 const Country = (props) => {
 
-    const { country, increment, decrement, deleteCountry } = props;
+    const { country, increment, decrement, deleteCountry, canDelete, canPatch } = props;
     const [originalCount] = useState(country.goldMedalCount + country.silverMedalCount + country.bronzeMedalCount);
     
     const totalMedals = () => {
@@ -39,6 +39,7 @@ const Country = (props) => {
                 bg='#F7FF11'
                 count={country.goldMedalCount}
                 name='Gold'
+                canPatch={ canPatch }
                 increment={increment}
                 decrement={decrement}
                 id={country.id}
@@ -49,6 +50,7 @@ const Country = (props) => {
                 bg='#bfc1c2'
                 count={country.silverMedalCount}
                 name='Silver'
+                canPatch={ canPatch }
                 increment={increment}
                 decrement={decrement}
                 id={country.id}
@@ -59,6 +61,7 @@ const Country = (props) => {
                   bg='#B85E1A'
                   count={country.bronzeMedalCount}
                   name='Bronze'
+                  canPatch={ canPatch }
                   increment={increment}
                   decrement={decrement}
                   id={country.id}
@@ -78,13 +81,15 @@ const Country = (props) => {
         }}
         >
           <div sx={{ gridColumn: '1/2' }}>
-            <Typography 
-              sx={{ cursor: 'pointer', textAlign: 'left', color: '#9F1716', position: 'relative', top: -5, pl: 1 }}
-              onClick={() => deleteCountry(country.id)}
-              >
-                <DeleteIcon sx={{ position: 'relative', top: 5 }} />
-                Delete
-              </Typography>
+            { canDelete &&
+              <Typography 
+                sx={{ cursor: 'pointer', textAlign: 'left', color: '#9F1716', position: 'relative', top: -5, pl: 1 }}
+                onClick={() => deleteCountry(country.id)}
+                >
+                  <DeleteIcon sx={{ position: 'relative', top: 5 }} />
+                  Delete
+                </Typography>
+            }    
           </div>
           <div sx={{ gridColumn: '2/3' }}>
             <Typography sx={{ fontWeight: 'bold', textAlign: 'right', position: 'relative', top: 1 }}>Total Medals:</Typography>
